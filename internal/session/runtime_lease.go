@@ -226,6 +226,28 @@ func TryRuntimeLease(s *Store, req RuntimeLeaseRequest) (*RuntimeLease, error) {
 	return l, nil
 }
 
+// TakeRecord adds the record on req's open row to a flock-only lease on the
+// same name, taken as TryRuntimeLease takes it. The legacy start holds the
+// name's flock first and takes the record only just before PreWake, so a start
+// deferred before then writes nothing. A failure leaves the lease flock-only.
+func (l *RuntimeLease) TakeRecord(s *Store, req RuntimeLeaseRequest) error {
+	switch {
+	case l.id != "":
+		return fmt.Errorf("runtime lease: runtime %q already holds session %q's record", l.name, l.id)
+	case strings.TrimSpace(req.Name) != l.name || req.ID == "" || s == nil || req.TTL < runtimeLeaseMinTTL:
+		return fmt.Errorf("runtime lease: runtime %q: a record needs its own name, a session, a store and a TTL of at least %v (got %q, %q, %v)", l.name, runtimeLeaseMinTTL, req.Name, req.ID, req.TTL)
+	}
+	l.store, l.id, l.holder = s, req.ID, newRuntimeLeaseHolder()
+	if req.now != nil {
+		l.now = req.now
+	}
+	if err := l.acquireRecord(req.City, req.TTL); err != nil {
+		l.store, l.id, l.holder, l.epoch, l.expires = nil, "", "", 0, time.Time{}
+		return err
+	}
+	return nil
+}
+
 // WaitRuntimeLease retries TryRuntimeLease until it succeeds, fails for
 // another reason, ctx ends, or bound passes, which returns the last busy error.
 // Operators use it (CONTRACT O3: attach waits 10s). It never blocks in the

@@ -43,11 +43,11 @@ var runtimeLeaseCityHelpers = map[string]int{
 // provider's Start or Stop directly, and why.
 var runtimeLeaseProviderAllowed = map[string]string{
 	"gracefulStopAllWithForceSignal":         "city stop: stops every runtime (the allowlist)",
-	"startPreparedStartCandidate":            "the legacy start (its lease: L1b-3)",
-	"stopStaleAsyncStartRuntime":             "a start's stale-commit cleanup, identity-checked (its lease: L1b-3)",
-	"pendingCreateRuntimeClearedForRollback": "an async start's rollback (its lease: L1b-3)",
-	"releaseBeadScopedPoolRuntime":           "an async start's commit cleanup (its lease: L1b-3)",
-	"stopStillBoundClosedRuntime":            "the closed-row reaper, under the in-process name lock (its flock and record: L1b-3)",
+	"startPreparedStartCandidate":            "the legacy start: runs under the candidate's lease",
+	"stopStaleAsyncStartRuntime":             "a start's stale-commit cleanup: runs under the start's lease, identity-checked",
+	"pendingCreateRuntimeClearedForRollback": "an async start's rollback: runs under the start's lease",
+	"releaseBeadScopedPoolRuntime":           "an async start's commit cleanup: runs under the start's lease",
+	"stopStillBoundClosedRuntimeLeased":      "the closed-row reaper: takes the lease itself",
 	"cleanupDeadRuntimeSessionCorpses":       "a dead runtime's corpse: no live runtime to race (residual, CONTRACT §12.5)",
 	"statusProvider.Start":                   "the status wrapper forwarding to its provider",
 	"statusProvider.Stop":                    "the status wrapper forwarding to its provider",

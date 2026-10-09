@@ -3764,7 +3764,8 @@ func reapRuntimesBoundToClosedBeads(
 			continue
 		}
 
-		stopped, err := stopStillBoundClosedRuntime(cityPath, name, liveID, sp, inv != nil)
+		owner, _ := sessionBeads.FindInfoBySessionName(name)
+		stopped, err := stopStillBoundClosedRuntimeLeased(store, cityPath, name, owner.ID, liveID, sp, inv != nil, stderr)
 		if !stopped {
 			continue
 		}
@@ -3795,11 +3796,23 @@ func reapRuntimesBoundToClosedBeads(
 // having runtime.StopForCleanup turn it into success. The unlock is deferred,
 // so a provider panic cannot leave the name locked.
 func stopStillBoundClosedRuntime(cityPath, name, liveID string, sp runtime.Provider, listed bool) (bool, error) {
-	unlock := runtimeNames.tryLock(cityPath, name)
-	if unlock == nil {
+	return stopStillBoundClosedRuntimeLeased(nil, cityPath, name, "", liveID, sp, listed, io.Discard)
+}
+
+// stopStillBoundClosedRuntimeLeased is stopStillBoundClosedRuntime under the
+// runtime lease (R-a): the in-process lock and the name's flock, plus the
+// record on ownerID, the open row that owns name now, if any, so a start of
+// that row on another host is excluded too. Another host's start with no open
+// row yet is not; the Stop's identity re-read and object kills bound it.
+func stopStillBoundClosedRuntimeLeased(store beads.Store, cityPath, name, ownerID, liveID string, sp runtime.Provider, listed bool, stderr io.Writer) (bool, error) {
+	_, release, err := tryRuntimeLease(store, cityPath, name, ownerID, session.RuntimeLeaseTTL(0))
+	if err != nil {
+		if !errors.Is(err, session.ErrRuntimeLeaseBusy) {
+			fmt.Fprintf(stderr, "session reconciler: reaping runtime %q skipped: %v\n", name, err) //nolint:errcheck
+		}
 		return false, nil
 	}
-	defer unlock()
+	defer release()
 	if again, err := sp.GetMeta(name, "GC_SESSION_ID"); err != nil || strings.TrimSpace(again) != liveID {
 		return false, nil
 	}
