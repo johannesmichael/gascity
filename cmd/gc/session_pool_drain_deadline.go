@@ -550,7 +550,7 @@ func poolSlotRuntimeStoppedForRetire(
 	if claimed {
 		return false, false
 	}
-	if err := workerKillSessionTargetWithConfig(cityPath, store, sp, cfg, name); err != nil && !runtime.IsSessionGone(err) {
+	if err := controllerKillSessionTarget(cityPath, store, sp, cfg, name); err != nil && !runtime.IsSessionGone(err) {
 		fmt.Fprintf(stderr, "session reconciler: drain-deadline stop of %s: %v\n", name, err) //nolint:errcheck
 		return false, false
 	}

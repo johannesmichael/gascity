@@ -310,7 +310,7 @@ func runControlDispatcherWithStoreAndConfig(cityPath, storePath string, store be
 				if strings.TrimSpace(subject.Assignee) == "" {
 					return fmt.Errorf("subject %s missing assignee for pooled retry recycle", subject.ID)
 				}
-				return workerKillSessionTargetWithConfig("", store, sp, cfg, subject.Assignee)
+				return workerKillSessionTargetWithConfig(cityPath, store, sp, cfg, subject.Assignee)
 			}
 		case "retry", "ralph":
 			opts.FormulaSearchPaths = workflowFormulaSearchPaths(cfg, bead)
@@ -327,7 +327,7 @@ func runControlDispatcherWithStoreAndConfig(cityPath, storePath string, store be
 				if strings.TrimSpace(subject.Assignee) == "" {
 					return fmt.Errorf("subject %s missing assignee for pooled retry recycle", subject.ID)
 				}
-				return workerKillSessionTargetWithConfig("", store, sp, cfg, subject.Assignee)
+				return workerKillSessionTargetWithConfig(cityPath, store, sp, cfg, subject.Assignee)
 			}
 		}
 	}

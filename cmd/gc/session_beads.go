@@ -710,7 +710,7 @@ func retireDuplicateConfiguredNamedSessionBeads(
 			b := openBeads[idx]
 			oldSessionName := strings.TrimSpace(b.Metadata["session_name"])
 			if oldSessionName != "" && oldSessionName != winnerSessionName &&
-				!stopRuntimeBeforeSessionBeadMutation(store, sp, cfg, b, "duplicate named session", stderr) {
+				!stopRuntimeBeforeSessionBeadMutation(cityPath, store, sp, cfg, b, "duplicate named session", stderr) {
 				continue
 			}
 			batch := session.RetireNamedSessionPatch(now, "duplicate-repair", identity)
@@ -805,7 +805,7 @@ func retireDuplicateConfiguredNamedSessionRows(
 			info := rows[idx].Info
 			oldSessionName := strings.TrimSpace(info.SessionNameMetadata)
 			if oldSessionName != "" && oldSessionName != winnerSessionName &&
-				!stopRuntimeBeforeSessionBeadMutationInfo(store, sp, cfg, info, "duplicate named session", stderr) {
+				!stopRuntimeBeforeSessionBeadMutationInfo(cityPath, store, sp, cfg, info, "duplicate named session", stderr) {
 				continue
 			}
 			batch := session.RetireNamedSessionPatch(now, "duplicate-repair", identity)
@@ -888,7 +888,7 @@ func retireRemovedConfiguredNamedSessionBead(
 	if store == nil {
 		return false
 	}
-	if !stopRuntimeBeforeSessionBeadMutation(store, sp, nil, b, "removed named session", stderr) {
+	if !stopRuntimeBeforeSessionBeadMutation(cityPath, store, sp, nil, b, "removed named session", stderr) {
 		return false
 	}
 	batch := session.RetireNamedSessionPatch(now, "removed-configured-named-session", namedSessionIdentity(b))
@@ -4084,6 +4084,7 @@ func closeSessionBeadIfRuntimeStoppedAndUnassigned(
 }
 
 func stopRuntimeBeforeSessionBeadMutation(
+	cityPath string,
 	store beads.Store,
 	sp runtime.Provider,
 	cfg *config.City,
@@ -4101,7 +4102,7 @@ func stopRuntimeBeforeSessionBeadMutation(
 	if !sp.IsRunning(sessionName) {
 		return true
 	}
-	if err := workerKillSessionTargetWithConfig("", store, sp, cfg, sessionName); err != nil {
+	if err := controllerKillSessionTarget(cityPath, store, sp, cfg, sessionName); err != nil {
 		fmt.Fprintf(stderr, "session beads: stopping %s %q (bead %s): %v\n", reason, sessionName, b.ID, err) //nolint:errcheck
 		return false
 	}
@@ -4117,6 +4118,7 @@ func stopRuntimeBeforeSessionBeadMutation(
 // (SessionNameMetadata / ID) and drives the identical stop-and-verify sequence, so
 // it is byte-identical to the raw form. The raw form survives for the sync path.
 func stopRuntimeBeforeSessionBeadMutationInfo(
+	cityPath string,
 	store beads.Store,
 	sp runtime.Provider,
 	cfg *config.City,
@@ -4134,7 +4136,7 @@ func stopRuntimeBeforeSessionBeadMutationInfo(
 	if !sp.IsRunning(sessionName) {
 		return true
 	}
-	if err := workerKillSessionTargetWithConfig("", store, sp, cfg, sessionName); err != nil {
+	if err := controllerKillSessionTarget(cityPath, store, sp, cfg, sessionName); err != nil {
 		fmt.Fprintf(stderr, "session beads: stopping %s %q (bead %s): %v\n", reason, sessionName, info.ID, err) //nolint:errcheck
 		return false
 	}

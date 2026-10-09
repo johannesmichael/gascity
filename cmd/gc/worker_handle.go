@@ -495,12 +495,28 @@ func runtimeWorkerHandleWithConfig(
 	return factory.RuntimeHandle(sessionName, providerName, transport, processNames)
 }
 
+// workerKillSessionTargetWithConfig is an operator's kill: it waits for the
+// session's runtime lease (CONTRACT O3).
 func workerKillSessionTargetWithConfig(cityPath string, store beads.Store, sp runtime.Provider, cfg *config.City, target string) error {
+	return workerKillSessionTargetCtx(context.Background(), cityPath, store, sp, cfg, target)
+}
+
+// controllerKillSessionTarget is the controller's kill: it never waits for the
+// session's runtime lease, and a busy lease is session.ErrRuntimeLeaseBusy,
+// which the caller defers to a later tick.
+func controllerKillSessionTarget(cityPath string, store beads.Store, sp runtime.Provider, cfg *config.City, target string) error {
+	return workerKillSessionTargetCtx(session.WithoutLeaseWait(context.Background()), cityPath, store, sp, cfg, target)
+}
+
+// workerKillSessionTargetCtx kills target under ctx's lease mode
+// (session.WithoutLeaseWait, session.ContextWithRuntimeLease,
+// session.CitySweepContext).
+func workerKillSessionTargetCtx(ctx context.Context, cityPath string, store beads.Store, sp runtime.Provider, cfg *config.City, target string) error {
 	handle, err := workerHandleForSessionTargetWithConfig(cityPath, store, sp, cfg, target)
 	if err != nil {
 		return err
 	}
-	return handle.Kill(context.Background())
+	return handle.Kill(ctx)
 }
 
 // workerStopSessionTargetForShutdownWithConfig is the city stop/restart sweep's
