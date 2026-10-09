@@ -650,7 +650,7 @@ func (s *Store) Close(expected Info, stateCode string, now time.Time) (bool, err
 	if err := premise(bead); err != nil {
 		return false, err
 	}
-	patch := withRuntimeLeaseCleared(bead.Metadata, ClosePatch(now, stateCode))
+	patch := ClosePatch(now, stateCode)
 	if closer, ok := beads.AtomicConditionalCloserFor(s.store); ok {
 		closed, err := s.closeAtomically(closer, bead, patch, premise)
 		if !beads.IsConditionalWriteUnsupported(err) {
@@ -704,7 +704,7 @@ func (s *Store) closeAtomically(closer beads.AtomicConditionalCloser, bead beads
 				return false, err
 			}
 		}
-		_, err := closer.CloseWithMetadataIfMatch(id, bead.Revision, map[string]string(patch))
+		_, err := closer.CloseWithMetadataIfMatch(id, bead.Revision, map[string]string(withRuntimeLeaseCleared(patch)))
 		switch {
 		case err == nil:
 			return true, nil
@@ -774,7 +774,6 @@ func (s *Store) CloseWithTerminalPatch(expected Info, patch MetadataPatch, commi
 	if bead.Status == "closed" {
 		return false, nil
 	}
-	patch = withRuntimeLeaseCleared(bead.Metadata, patch)
 	guard := func(open beads.Bead) error {
 		row := infoFromPersistedBead(open)
 		if IsKillPendingInfo(row, now) {
@@ -920,10 +919,11 @@ func (s *Store) applyPatchIfClosed(id string, patch MetadataPatch) (bool, error)
 // reopen and named-session retire-archive paths (session_beads.go), which open
 // the bead row after stamping archive/reopen metadata via setMetaBatch. It
 // emits a single Update op with only Status set, byte-identical to the raw
-// write.
+// write, plus the runtime lease clear (RuntimeLeaseClearPatch): a reopened
+// row holds no lease.
 func (s *Store) SetStatusOpen(id string) error {
 	open := "open"
-	if err := s.store.Update(id, beads.UpdateOpts{Status: &open}); err != nil {
+	if err := s.store.Update(id, beads.UpdateOpts{Status: &open, Metadata: map[string]string(RuntimeLeaseClearPatch())}); err != nil {
 		return err
 	}
 	return nil
