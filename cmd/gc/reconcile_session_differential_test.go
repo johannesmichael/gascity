@@ -134,7 +134,9 @@ var parityFindings = map[string]parityEntry{
 		"C6d, BEHAVIORS DRAIN-044", "legacy cancels an idle-respawn drain no longer eligible; A19 holds it until C6d completes its policy row",
 		[]string{session.DrainIntentReasonKey, session.DrainIntentAtKey, session.DrainIntentIncarnationKey},
 	},
-	"external-reads-stamp": {"BEHAVIORS POOL-019 (KEPT: lane:external-reads step)", "legacy's demand pass stamps the run's session name and work dir on in-progress work (stampRunSessionIdentity); v2 owns it as an external-reads step, which this differential's v2 copy does not run", []string{"gc.session_name", "gc.work_dir"}},
+	"external-reads-stamp":  {"BEHAVIORS POOL-019 (KEPT: lane:external-reads step)", "legacy's demand pass stamps the run's session name and work dir on in-progress work (stampRunSessionIdentity); v2 owns it as an external-reads step, which this differential's v2 copy does not run", []string{"gc.session_name", "gc.work_dir"}},
+	"stability-clear-order": {"BEHAVIORS SESS-539 (KEPT: A6 stability clear, before A20)", "on the first tick past the 30s stability threshold, a live quarantined row whose no-wake drain legacy cancels keeps its wake_attempts and quarantine until the next tick; v2's A6 clears them at once", []string{"wake_attempts", "quarantined_until"}},
+	"rig-leg-heal":          {"C5D2-1 (ARCH-RESTRUCTURE R6.1)", "v2's A6 heals a census-only rig-leg row (here it stamps detached_at); legacy reads a rig store for work only and never touches a session row there", []string{"detached_at"}},
 	"stability-accrual": {
 		"DIF-L1, BEHAVIORS SESS-537/538 (S3 abandon table + S6 #46)", "legacy counts a death inside the 30s stability threshold as a wake failure and one before the productivity threshold as churn (quarantining it); no v2 arm or effect accrues either, yet §12.2 row 18 claims them",
 		[]string{"wake_attempts", "churn_count", "quarantined_until", "sleep_reason"},
@@ -149,6 +151,8 @@ var parityUnported = map[string]parityEntry{
 	"A21 close":       {"C5c1 (#7314), C5c1b (#7330)", "legacy closes an unwanted dead row; v2 registers no close arm yet", []string{"status", "state", "close_reason", "closed_at"}},
 	"A21 stranded":    {"C5c1 (#7314)", "legacy stamps the stranded marker of a dead row with assigned work and records session.stranded; v2 registers no close arm yet", []string{"stranded_event_emitted_at"}},
 	"A7 identity":     {"C7d (mc-3lel1)", "legacy's session-bead sync converges a row's identity to its config: the agent label, the pool slot a canonical singleton drops, and an alias the pool does not manage (clearing it, and GC_ALIAS on the runtime); v2 registers no row-metadata arm yet", []string{"alias", "alias_history", "labels", "pool_slot", "agent_name"}},
+	"A20 idle-sleep":  {"C6a2, BEHAVIORS SESS-532", "legacy drains an idle row (its probe answers idle) and finishes the sleep: SleepPatch(idle) with the drain's sleep-policy fingerprint, the idle latch's input; v2 registers no drain-policy arm yet", []string{"sleep_intent", "sleep_reason", "slept_at", "drain_at", "detached_at"}},
+	"A20 drain-begin": {"C6a2 (A20 + D2)", "legacy begins a drain v2 does not: on a live row its quarantine keeps from waking (canceled again once its work vetoes it), on an unwanted row past the INC-003 grace, and on a managed suspend; v2 registers no drain-begin arm yet", []string{session.DrainIntentReasonKey, session.DrainIntentAtKey, session.DrainIntentIncarnationKey, "drain_at", "sleep_intent", "slept_at", "state_reason"}},
 	"A7 row-metadata": {"C7d", "legacy's session-bead sync stamps the row metadata of a row created or changed this tick; v2 registers no row-metadata arm yet", []string{"synced_at", "command", "work_dir"}},
 }
 

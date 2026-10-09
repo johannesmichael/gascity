@@ -31,3 +31,184 @@ row:gc-1:state legacy="awake" v2="asleep" [A18 start]
 row:gc-1:state_reason legacy="creation_complete" v2="" [A18 start]
 row:gc-1:wake_attempts legacy="3" v2="2" [stability-accrual]
 runtime:s-gc-1 legacy="id=gc-1 epoch=2 token=<set> alive attached=false" v2="" [A18 start]
+=== a crash 31s after wake
+## 0 seed (+10s)
+row:gc-1:effective_sleep_after_idle legacy="off" v2="" [sleep-policy-keys]
+row:gc-1:labels legacy="agent:worker,gc:session" v2="gc:session" [A7 identity]
+row:gc-1:pool_slot legacy="" v2="1" [A7 identity]
+row:gc-1:requested_sleep_after_idle legacy="off" v2="" [sleep-policy-keys]
+row:gc-1:sleep_capability legacy="full" v2="" [sleep-policy-keys]
+row:gc-1:sleep_policy_fingerprint legacy="value=off|class=interactive_resume|source=legacy_off|wake=resume|cap=full|deps=|template=worker" v2="" [sleep-policy-keys]
+row:gc-1:sleep_policy_source legacy="legacy_off" v2="" [sleep-policy-keys]
+work:gw-1:gc.session_name legacy="s-gc-1" v2="" [external-reads-stamp]
+## 1 crash (+41s)
+row:gc-1:churn_count legacy="3" v2="2" [stability-accrual]
+row:gc-1:last_woke_at legacy="" v2="T+0s" [stability-accrual]
+row:gc-1:quarantined_until legacy="T+5m31s" v2="" [stability-accrual]
+row:gc-1:sleep_reason legacy="context-churn" v2="" [stability-accrual]
+=== a crash 5m0s after wake
+## 0 seed (+10s)
+row:gc-1:effective_sleep_after_idle legacy="off" v2="" [sleep-policy-keys]
+row:gc-1:labels legacy="agent:worker,gc:session" v2="gc:session" [A7 identity]
+row:gc-1:pool_slot legacy="" v2="1" [A7 identity]
+row:gc-1:requested_sleep_after_idle legacy="off" v2="" [sleep-policy-keys]
+row:gc-1:sleep_capability legacy="full" v2="" [sleep-policy-keys]
+row:gc-1:sleep_policy_fingerprint legacy="value=off|class=interactive_resume|source=legacy_off|wake=resume|cap=full|deps=|template=worker" v2="" [sleep-policy-keys]
+row:gc-1:sleep_policy_source legacy="legacy_off" v2="" [sleep-policy-keys]
+work:gw-1:gc.session_name legacy="s-gc-1" v2="" [external-reads-stamp]
+## 1 crash (+5m20s)
+event:session.woke worker null legacy="1" v2="" [A18 start]
+provider:RemoveMeta s-gc-1 legacy="5" v2="" [A18 start]
+provider:Start s-gc-1 legacy="1" v2="" [A18 start]
+row:gc-1:awake_started_at legacy="T+5m0s" v2="" [A18 start]
+row:gc-1:churn_count legacy="0" v2="2" [stability-accrual]
+row:gc-1:core_hash_breakdown legacy="<set>" v2="" [A18 start]
+row:gc-1:creation_complete_at legacy="T+5m0s" v2="" [A18 start]
+row:gc-1:generation legacy="2" v2="1" [A18 start]
+row:gc-1:last_woke_at legacy="T+5m0s" v2="T+0s" [A18 start]
+row:gc-1:live_hash legacy="<set>" v2="" [A18 start]
+row:gc-1:primed_at legacy="T+5m0s" v2="" [A18 start]
+row:gc-1:prompt_hash legacy="<set>" v2="" [A18 start]
+row:gc-1:started_config_hash legacy="<set>" v2="" [A18 start]
+row:gc-1:started_launch_hash legacy="<set>" v2="" [A18 start]
+row:gc-1:started_live_hash legacy="<set>" v2="" [A18 start]
+row:gc-1:started_provision_hash legacy="<set>" v2="" [A18 start]
+row:gc-1:state legacy="awake" v2="asleep" [A18 start]
+row:gc-1:state_reason legacy="creation_complete" v2="" [A18 start]
+runtime:s-gc-1 legacy="id=gc-1 epoch=2 token=<set> alive attached=false" v2="" [A18 start]
+=== a live quarantined row 29s after wake
+## 0 seed (+0s)
+provider:SetMeta s-gc-1 legacy="4" v2="" [A20 drain-begin]
+row:gc-1:drain_intent_at legacy="T+0s" v2="" [A20 drain-begin]
+row:gc-1:drain_intent_incarnation legacy="1" v2="" [A20 drain-begin]
+row:gc-1:drain_intent_reason legacy="no-wake-reason" v2="" [A20 drain-begin]
+row:gc-1:effective_sleep_after_idle legacy="off" v2="" [sleep-policy-keys]
+row:gc-1:labels legacy="agent:worker,gc:session" v2="gc:session" [A7 identity]
+row:gc-1:pool_slot legacy="" v2="1" [A7 identity]
+row:gc-1:requested_sleep_after_idle legacy="off" v2="" [sleep-policy-keys]
+row:gc-1:sleep_capability legacy="full" v2="" [sleep-policy-keys]
+row:gc-1:sleep_policy_fingerprint legacy="value=off|class=interactive_resume|source=legacy_off|wake=resume|cap=full|deps=|template=worker" v2="" [sleep-policy-keys]
+row:gc-1:sleep_policy_source legacy="legacy_off" v2="" [sleep-policy-keys]
+work:gw-1:gc.session_name legacy="s-gc-1" v2="" [external-reads-stamp]
+## 1 alive (+29s)
+provider:RemoveMeta s-gc-1 legacy="11" v2="" [A20 drain-begin]
+provider:SetMeta s-gc-1 resolved
+row:gc-1:drain_intent_at resolved
+row:gc-1:drain_intent_incarnation resolved
+row:gc-1:drain_intent_reason resolved
+## 2 settled (+59s)
+provider:SetMeta s-gc-1 legacy="4" v2="" [A20 drain-begin]
+=== a live quarantined row 31s after wake
+## 0 seed (+0s)
+provider:SetMeta s-gc-1 legacy="4" v2="" [A20 drain-begin]
+row:gc-1:drain_intent_at legacy="T+0s" v2="" [A20 drain-begin]
+row:gc-1:drain_intent_incarnation legacy="1" v2="" [A20 drain-begin]
+row:gc-1:drain_intent_reason legacy="no-wake-reason" v2="" [A20 drain-begin]
+row:gc-1:effective_sleep_after_idle legacy="off" v2="" [sleep-policy-keys]
+row:gc-1:labels legacy="agent:worker,gc:session" v2="gc:session" [A7 identity]
+row:gc-1:pool_slot legacy="" v2="1" [A7 identity]
+row:gc-1:requested_sleep_after_idle legacy="off" v2="" [sleep-policy-keys]
+row:gc-1:sleep_capability legacy="full" v2="" [sleep-policy-keys]
+row:gc-1:sleep_policy_fingerprint legacy="value=off|class=interactive_resume|source=legacy_off|wake=resume|cap=full|deps=|template=worker" v2="" [sleep-policy-keys]
+row:gc-1:sleep_policy_source legacy="legacy_off" v2="" [sleep-policy-keys]
+work:gw-1:gc.session_name legacy="s-gc-1" v2="" [external-reads-stamp]
+## 1 alive (+31s)
+provider:RemoveMeta s-gc-1 legacy="11" v2="" [A20 drain-begin]
+provider:SetMeta s-gc-1 resolved
+row:gc-1:drain_intent_at resolved
+row:gc-1:drain_intent_incarnation resolved
+row:gc-1:drain_intent_reason resolved
+row:gc-1:quarantined_until legacy="T+1h0m0s" v2="" [stability-clear-order]
+row:gc-1:wake_attempts legacy="2" v2="0" [stability-clear-order]
+## 2 settled (+41s)
+provider:RemoveMeta s-gc-1 resolved
+row:gc-1:quarantined_until resolved
+row:gc-1:wake_attempts resolved
+=== an unwanted row inside, then past, the wake grace
+## 0 seed (+0s)
+## 1 inside the grace (+2m0s)
+## 2 past the grace (+5m30s)
+event:session.stopped worker {"reason":"drain acknowledged","session_id":"gc-1","template":"worker"} legacy="1" v2="" [A20 drain-begin]
+provider:RemoveMeta s-gc-1 legacy="6" v2="" [A20 drain-begin]
+provider:SetMeta s-gc-1 legacy="4" v2="" [A20 drain-begin]
+provider:Stop s-gc-1 legacy="1" v2="" [A20 drain-begin]
+row:gc-1:close_reason legacy="session drained: pool slot retired by reconciler" v2="" [A21 close]
+row:gc-1:closed_at legacy="T+5m20s" v2="" [A21 close]
+row:gc-1:drain_at legacy="T+5m10s" v2="" [A20 drain-begin]
+row:gc-1:state legacy="drained" v2="awake" [A21 close]
+row:gc-1:state_reason legacy="drain-ack-stop-pending" v2="" [A20 drain-begin]
+row:gc-1:status legacy="closed" v2="open" [A21 close]
+row:gc-1:synced_at legacy="T+5m20s" v2="" [A7 row-metadata]
+runtime:s-gc-1 legacy="" v2="id=gc-1 epoch=1 token=tok-gc-1 alive attached=false" [A20 drain-begin]
+## 3 past the drain timeout (+11m30s)
+event:session.stopped worker {"reason":"drain acknowledged","session_id":"gc-1","template":"worker"} resolved
+provider:RemoveMeta s-gc-1 resolved
+provider:SetMeta s-gc-1 resolved
+provider:Stop s-gc-1 resolved
+=== attach, then detach, then idle
+## 0 seed (+10s)
+provider:RemoveMeta s-gc-1 legacy="1" v2="" [A7 identity]
+provider:SetMeta s-gc-1 legacy="2" v2="" [A7 identity]
+row:gc-1:alias legacy="" v2="alias-gc-1" [A7 identity]
+row:gc-1:effective_sleep_after_idle legacy="5m" v2="" [sleep-policy-keys]
+row:gc-1:requested_sleep_after_idle legacy="5m" v2="" [sleep-policy-keys]
+row:gc-1:sleep_capability legacy="full" v2="" [sleep-policy-keys]
+row:gc-1:sleep_policy_fingerprint legacy="value=5m|class=interactive_resume|source=agent|wake=resume|cap=full|deps=|template=worker" v2="" [sleep-policy-keys]
+row:gc-1:sleep_policy_source legacy="agent" v2="" [sleep-policy-keys]
+row:rg-1:detached_at legacy="" v2="T+0s" [rig-leg-heal]
+## 1 detach (+1m20s)
+provider:RemoveMeta s-gc-1 resolved
+provider:SetMeta s-gc-1 resolved
+## 2 idle past sleep_after_idle (+7m30s)
+row:gc-1:config_wake_suppressed legacy="true" v2="" [sleep-policy-keys]
+=== idle, then sleep, then the next pass
+## 0 seed (+10s)
+row:gc-c:effective_sleep_after_idle legacy="5m" v2="" [sleep-policy-keys]
+row:gc-c:requested_sleep_after_idle legacy="5m" v2="" [sleep-policy-keys]
+row:gc-c:sleep_capability legacy="full" v2="" [sleep-policy-keys]
+row:gc-c:sleep_policy_fingerprint legacy="value=5m|class=interactive_resume|source=agent|wake=resume|cap=full|deps=|template=chat" v2="" [sleep-policy-keys]
+row:gc-c:sleep_policy_source legacy="agent" v2="" [sleep-policy-keys]
+row:gc-c:work_dir legacy="<city>" v2="" [A7 row-metadata]
+## 1 idle past sleep_after_idle (+6m50s)
+event:session.stopped chat {"reason":"drain acknowledged","session_id":"gc-c","template":"chat"} legacy="1" v2="" [A20 idle-sleep]
+provider:RemoveMeta test-city--chat legacy="6" v2="" [A20 idle-sleep]
+provider:SetMeta test-city--chat legacy="4" v2="" [A20 idle-sleep]
+provider:Stop test-city--chat legacy="1" v2="" [A20 idle-sleep]
+row:gc-c:config_wake_suppressed legacy="true" v2="" [sleep-policy-keys]
+row:gc-c:detached_at legacy="" v2="T+0s" [A20 idle-sleep]
+row:gc-c:drain_at legacy="T+6m20s" v2="" [A20 idle-sleep]
+row:gc-c:last_woke_at legacy="" v2="T-1m0s" [A20 idle-sleep]
+row:gc-c:sleep_reason legacy="idle" v2="" [A20 idle-sleep]
+row:gc-c:slept_at legacy="T+6m40s" v2="" [A20 idle-sleep]
+row:gc-c:state legacy="asleep" v2="awake" [A20 idle-sleep]
+runtime:test-city--chat legacy="" v2="id=gc-c epoch=1 token=tok-gc-c alive attached=false" [A20 idle-sleep]
+## 2 the next pass (+7m50s)
+event:session.stopped chat {"reason":"drain acknowledged","session_id":"gc-c","template":"chat"} resolved
+provider:RemoveMeta test-city--chat resolved
+provider:SetMeta test-city--chat resolved
+provider:Stop test-city--chat resolved
+## 3 the sleep policy changes (+9m10s)
+event:session.woke chat null legacy="1" v2="" [A18 start]
+provider:RemoveMeta test-city--chat legacy="5" v2="" [A18 start]
+provider:Start test-city--chat legacy="1" v2="" [A18 start]
+row:gc-c:awake_started_at legacy="T+8m50s" v2="" [A18 start]
+row:gc-c:config_wake_suppressed resolved
+row:gc-c:core_hash_breakdown legacy="<set>" v2="" [A18 start]
+row:gc-c:creation_complete_at legacy="T+8m50s" v2="" [A18 start]
+row:gc-c:detached_at legacy="T+9m0s" v2="T+0s" [A20 idle-sleep]
+row:gc-c:effective_sleep_after_idle legacy="10m" v2="" [sleep-policy-keys]
+row:gc-c:generation legacy="2" v2="1" [A18 start]
+row:gc-c:last_woke_at legacy="T+8m50s" v2="T-1m0s" [A18 start]
+row:gc-c:live_hash legacy="<set>" v2="" [A18 start]
+row:gc-c:primed_at legacy="T+8m50s" v2="" [A18 start]
+row:gc-c:prompt_hash legacy="<set>" v2="" [A18 start]
+row:gc-c:requested_sleep_after_idle legacy="10m" v2="" [sleep-policy-keys]
+row:gc-c:sleep_policy_fingerprint legacy="value=10m|class=interactive_resume|source=agent|wake=resume|cap=full|deps=|template=chat" v2="" [sleep-policy-keys]
+row:gc-c:sleep_reason resolved
+row:gc-c:started_config_hash legacy="<set>" v2="" [A18 start]
+row:gc-c:started_launch_hash legacy="<set>" v2="" [A18 start]
+row:gc-c:started_live_hash legacy="<set>" v2="" [A18 start]
+row:gc-c:started_provision_hash legacy="<set>" v2="" [A18 start]
+row:gc-c:state resolved
+row:gc-c:state_reason legacy="creation_complete" v2="" [A18 start]
+runtime:test-city--chat legacy="id=gc-c epoch=2 token=<set> alive attached=false" v2="id=gc-c epoch=1 token=tok-gc-c alive attached=false" [A18 start]

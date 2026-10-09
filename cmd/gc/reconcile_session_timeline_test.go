@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gastownhall/gascity/internal/agent"
 	"github.com/gastownhall/gascity/internal/beads"
 	"github.com/gastownhall/gascity/internal/config"
 	"github.com/gastownhall/gascity/internal/events"
@@ -416,6 +417,13 @@ var (
 // new digest; the last entry per fixture is the one in force.
 var timelineGoldenRulings = []goldenRuling{
 	{"a crash 29s after wake", timelineGoldenBaseline, "de882b5af5da"},
+	{"a crash 31s after wake", timelineGoldenBaseline, "ca87e99b0987"},
+	{"a crash 5m0s after wake", timelineGoldenBaseline, "9fb7374990bf"},
+	{"a live quarantined row 29s after wake", timelineGoldenBaseline, "0651d1456a1b"},
+	{"a live quarantined row 31s after wake", timelineGoldenBaseline, "7118b3924da0"},
+	{"an unwanted row inside, then past, the wake grace", timelineGoldenBaseline, "bead46681605"},
+	{"attach, then detach, then idle", timelineGoldenBaseline, "e2595b43284b"},
+	{"idle, then sleep, then the next pass", timelineGoldenBaseline, "2e9ca891738c"},
 }
 
 func goldenDigest(section string) string {
@@ -567,7 +575,7 @@ func TestTimelineGoldenNeedsARuling(t *testing.T) {
 // §3.6, each group's own: the stability clears and accrual, then the idle
 // and drain timers, then the operator verbs.
 func timelineFixtures() []timelineFixture {
-	return slices.Concat(stabilityTimeline())
+	return slices.Concat(stabilityTimeline(), idleTimeline())
 }
 
 func tlAt(d time.Duration) string { return parityNow.Add(d).UTC().Format(time.RFC3339) }
@@ -672,8 +680,126 @@ func stabilityTimeline() []timelineFixture {
 			[]parityRow{row("wake_attempts", "2", "churn_count", "2")}, tlClaim("in_progress", "worker"), []simRuntime{tlLive("gc-1")},
 			[]parityStep{{Name: "crash", At: d, Op: crash}}, standing, map[string]map[string]string{"crash": crashed})
 	}
+	// quarantinedAt is a live, quarantined row seen one tick at d after its
+	// wake: past the 30s stability threshold legacy clears the wake failures
+	// and the quarantine (SESS-539). Meanwhile its quarantine keeps it from
+	// waking for its work, so legacy drains it, and its work vetoes the
+	// drain.
+	quarantinedAt := func(d time.Duration, per map[string]map[string]string) timelineFixture {
+		return tlFixture(fmt.Sprintf("a live quarantined row %s after wake", d), stable,
+			[]parityRow{row("wake_attempts", "2", "quarantined_until", tlAt(time.Hour))}, tlClaim("in_progress", "worker"), []simRuntime{tlLive("gc-1")},
+			[]parityStep{{Name: "seed", Ticks: 1}, {Name: "alive", At: d, Ticks: 1}, {Name: "settled"}}, standing, per)
+	}
+	drainBegun := map[string]string{"row:gc-1:*drain": "A20 drain-begin", "provider:SetMeta s-gc-1": "A20 drain-begin"}
 	restarted := tlStarted("gc-1", "s-gc-1", "worker")
 	return []timelineFixture{
 		crashAfter(29*time.Second, tlMerged(restarted, tlAccrued())),
+		crashAfter(31*time.Second, tlMerged(tlAccrued(), map[string]string{"row:gc-1:last_woke_at": "stability-accrual"})),
+		crashAfter(5*time.Minute, tlMerged(restarted, tlAccrued())),
+		quarantinedAt(29*time.Second, map[string]map[string]string{
+			"seed": drainBegun, "alive": {"provider:RemoveMeta s-gc-1": "A20 drain-begin"},
+			"settled": {"provider:SetMeta s-gc-1": "A20 drain-begin", "provider:RemoveMeta s-gc-1": "A20 drain-begin"},
+		}),
+		quarantinedAt(31*time.Second, map[string]map[string]string{
+			"seed": drainBegun, "alive": {"provider:RemoveMeta s-gc-1": "A20 drain-begin", "row:gc-1:*clear": "stability-clear-order"},
+		}),
 	}
+}
+
+// reconfigure reloads the copy with a changed copy of its config.
+func (tw twin) reconfigure(change func(*config.City)) {
+	next := *tw.cfg
+	next.Agents = make([]config.Agent, len(tw.cfg.Agents))
+	for i, a := range tw.cfg.Agents {
+		next.Agents[i] = a.Clone()
+	}
+	next.NamedSessions, next.Rigs = slices.Clone(tw.cfg.NamedSessions), slices.Clone(tw.cfg.Rigs)
+	change(&next)
+	tw.reload(&next)
+}
+
+// tlAliasSeed adds legacy's seed-tick clear of gc-1's unmanaged alias on
+// its live runtime to the identity difference.
+func tlAliasSeed() map[string]string {
+	return tlMerged(tlIdent(), map[string]string{"provider:SetMeta s-gc-1": "A7 identity", "provider:RemoveMeta s-gc-1": "A7 identity"})
+}
+
+// idleTimeline is the idle and drain timers: the idle drain and its latch,
+// detached_at, and the INC-003 wake grace.
+func idleTimeline() []timelineFixture {
+	napping := func() *config.City {
+		cfg := tlCity()
+		cfg.Agents[0].SleepAfterIdle = "5m"
+		return cfg
+	}
+	// chatNapping adds an always named session "chat" that idle-sleeps after
+	// five minutes; named is its row, under the city's session name for it.
+	chatNapping := func() *config.City {
+		cfg := tlCity()
+		cfg.Agents = append(cfg.Agents, config.Agent{Name: "chat", StartCommand: "true", SleepAfterIdle: "5m"})
+		cfg.NamedSessions = []config.NamedSession{{Template: "chat", Mode: "always"}}
+		return cfg
+	}
+	chatName := agent.SessionNameFor("test-city", "chat", tlCity().Workspace.SessionTemplate)
+	named := chatRow("gc-c", "1", "state", "awake", "session_name", chatName, "instance_token", "tok-gc-c", "last_woke_at", tlAt(-time.Minute), "alias", "chat")
+	named.Title = "Display gc-c"
+	// slept is legacy's idle sleep of gc-c, its runtime stopped, which v2
+	// leaves to A20.
+	slept := map[string]string{
+		"row:gc-c:*idle": "A20 idle-sleep", "row:gc-c:state": "A20 idle-sleep", "row:gc-c:last_woke_at": "A20 idle-sleep", "runtime:" + chatName: "A20 idle-sleep",
+	}
+	// Legacy's idle probe succeeds (WaitForIdle answers idle), so it begins
+	// and finishes the idle drain itself: the idle sleep, its latch over the
+	// always-named demand, and the latch's release once a reload changes the
+	// policy (its fingerprint).
+	idle := tlFixture("idle, then sleep, then the next pass", chatNapping, []parityRow{named}, nil, []simRuntime{tlLive("gc-c")},
+		[]parityStep{
+			{Name: "idle past sleep_after_idle", At: 6 * time.Minute},
+			{Name: "the next pass", Advance: time.Minute},
+			{Name: "the sleep policy changes", Advance: time.Minute, Op: func(tw twin) {
+				tw.reconfigure(func(c *config.City) { c.Agents[1].SleepAfterIdle = "10m" })
+			}},
+		}, tlMerged(tlPol("gc-c"), map[string]string{"row:gc-c:*sync": "A7 row-metadata"}), map[string]map[string]string{
+			"idle past sleep_after_idle": tlMerged(slept, map[string]string{
+				"provider:SetMeta " + chatName: "A20 idle-sleep", "provider:RemoveMeta " + chatName: "A20 idle-sleep", "provider:Stop " + chatName: "A20 idle-sleep",
+				`event:session.stopped chat {"reason":"drain acknowledged","session_id":"gc-c","template":"chat"}`: "A20 idle-sleep",
+			}),
+			"the next pass":            slept,
+			"the sleep policy changes": tlMerged(tlStarted("gc-c", chatName, "chat"), map[string]string{"row:gc-c:*idle": "A20 idle-sleep"}),
+		})
+	idle.Setup = func(tw twin) {
+		tw.sp.mu.Lock()
+		tw.sp.WaitForIdleErrors[chatName] = nil
+		tw.sp.mu.Unlock()
+	}
+	attach := tlFixture("attach, then detach, then idle", napping,
+		[]parityRow{tlRow("gc-1", 1, time.Minute)}, []parityRow{routedDemandBead("gw-1")}, []simRuntime{{id: "gc-1", epoch: "1", token: "tok-gc-1", attached: true}},
+		[]parityStep{
+			{Name: "detach", Advance: time.Minute, Op: func(tw twin) {
+				tw.sp.SetActivity("s-gc-1", tw.now)
+				tw.runtime("gc-1", func(rt simRuntime) *simRuntime { rt.attached = false; return &rt })
+			}},
+			{Name: "idle past sleep_after_idle", Advance: 6 * time.Minute},
+		}, tlMerged(tlPol("gc-1"), tlIdent(), map[string]string{"row:rg-1:*heal": "rig-leg-heal"}), map[string]map[string]string{"seed": tlAliasSeed()})
+	// retired is legacy's drain of gc-1, acknowledged and stopped, and the
+	// pool slot's close; v2 leaves the drain to A20 and the close to A21.
+	retired := map[string]string{
+		"row:gc-1:*drain": "A20 drain-begin", "runtime:s-gc-1": "A20 drain-begin", "row:gc-1:*close": "A21 close", "row:gc-1:*sync": "A7 row-metadata",
+	}
+	// An unwanted row woken a minute ago: legacy keeps it for the 5m wake
+	// grace (INC-003), then drains it and retires its slot.
+	grace := tlFixture("an unwanted row inside, then past, the wake grace", tlCity,
+		[]parityRow{tlRow("gc-1", 1, time.Minute)}, nil, []simRuntime{tlLive("gc-1")},
+		[]parityStep{
+			{Name: "inside the grace", At: 2 * time.Minute},
+			{Name: "past the grace", At: 5 * time.Minute},
+			{Name: "past the drain timeout", Advance: 6 * time.Minute},
+		}, nil, map[string]map[string]string{
+			"past the grace": tlMerged(retired, map[string]string{
+				"provider:SetMeta s-gc-1": "A20 drain-begin", "provider:RemoveMeta s-gc-1": "A20 drain-begin", "provider:Stop s-gc-1": "A20 drain-begin",
+				`event:session.stopped worker {"reason":"drain acknowledged","session_id":"gc-1","template":"worker"}`: "A20 drain-begin",
+			}),
+			"past the drain timeout": retired,
+		})
+	return []timelineFixture{idle, attach, grace}
 }
