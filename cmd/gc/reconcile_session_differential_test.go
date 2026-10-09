@@ -141,6 +141,7 @@ var parityFindings = map[string]parityEntry{
 		"DIF-L1, BEHAVIORS SESS-537/538 (S3 abandon table + S6 #46)", "legacy counts a death inside the 30s stability threshold as a wake failure and one before the productivity threshold as churn (quarantining it); no v2 arm or effect accrues either, yet §12.2 row 18 claims them",
 		[]string{"wake_attempts", "churn_count", "quarantined_until", "sleep_reason"},
 	},
+	"fenced-timer-heal": {"CONTRACT v5 A2, BEHAVIORS SESS-010, mc-uyclc", "legacy heals an expired quarantine under a live kill fence (clearing quarantined_until and zeroing wake_attempts and churn_count); v2's A2 holds the fenced row, so A6's timer heal waits for the fence to expire. §12.2 does not list it", []string{"quarantined_until", "wake_attempts", "churn_count"}},
 	"mislabelled-close": {"CONTRACT v5 AL1, A1", "legacy closes a row with no template and no session name as orphaned; v2's A1 leaves it open as None, which §12.2 does not list", []string{"status", "state", "close_reason", "closed_at"}},
 }
 
@@ -153,6 +154,7 @@ var parityUnported = map[string]parityEntry{
 	"A7 identity":     {"C7d (mc-3lel1)", "legacy's session-bead sync converges a row's identity to its config: the agent label, the pool slot a canonical singleton drops, and an alias the pool does not manage (clearing it, and GC_ALIAS on the runtime); v2 registers no row-metadata arm yet", []string{"alias", "alias_history", "labels", "pool_slot", "agent_name"}},
 	"A20 idle-sleep":  {"C6a2, BEHAVIORS SESS-532", "legacy drains an idle row (its probe answers idle) and finishes the sleep: SleepPatch(idle) with the drain's sleep-policy fingerprint, the idle latch's input; v2 registers no drain-policy arm yet", []string{"sleep_intent", "sleep_reason", "slept_at", "drain_at", "detached_at"}},
 	"A20 drain-begin": {"C6a2 (A20 + D2)", "legacy begins a drain v2 does not: on a live row its quarantine keeps from waking (canceled again once its work vetoes it), on an unwanted row past the INC-003 grace, and on a managed suspend; v2 registers no drain-begin arm yet", []string{session.DrainIntentReasonKey, session.DrainIntentAtKey, session.DrainIntentIncarnationKey, "drain_at", "sleep_intent", "slept_at", "state_reason"}},
+	"A21 killed-seat": {"C5c1 (#7314), owner ruling B1 (CONTRACT C3 killed pool seats)", "past the kill grace legacy releases a killed seat's open claim and closes it, and the freed demand creates and starts a fresh seat; v2 registers no close arm yet", []string{"status", "state", "close_reason", "closed_at"}},
 	"A7 row-metadata": {"C7d", "legacy's session-bead sync stamps the row metadata of a row created or changed this tick; v2 registers no row-metadata arm yet", []string{"synced_at", "command", "work_dir"}},
 }
 

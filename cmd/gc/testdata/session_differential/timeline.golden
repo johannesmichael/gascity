@@ -161,6 +161,138 @@ row:gc-1:drain_intent_reason=
 row:gc-1:currently_processing_bead_id=gw-1
 row:gc-1:quarantined_until=
 row:gc-1:wake_attempts=0
+=== a managed suspend drains, then wake
+## 0 seed (+10s)
+provider:RemoveMeta s-gc-1=1
+provider:SetMeta s-gc-1=2
+row:gc-1:alias=
+row:gc-1:alias_history=alias-gc-1
+row:gc-1:command=true
+row:gc-1:continuation_epoch=1
+row:gc-1:currently_processing_bead_id=gw-1
+row:gc-1:effective_sleep_after_idle=off
+row:gc-1:gc.trigger_bead_id=gw-1
+row:gc-1:gc.work_dir=<city>
+row:gc-1:requested_sleep_after_idle=off
+row:gc-1:session_origin=ephemeral
+row:gc-1:sleep_capability=full
+row:gc-1:sleep_policy_fingerprint=value=off|class=interactive_resume|source=legacy_off|wake=resume|cap=full|deps=|template=worker
+row:gc-1:sleep_policy_source=legacy_off
+row:gc-1:synced_at=T+0s
+row:gc-1:work_dir=<city>
+work:gw-1:gc.session_name=s-gc-1
+## 1 suspend (+1m0s)
+event:session.drain_acked_with_assigned_work worker {"bead_id":"gw-1","bead_status":"in_progress","reason":"drain_acked_with_assigned_work","session_id":"gc-1","template":"worker"}=1
+event:session.stopped worker {"reason":"drain acknowledged","session_id":"gc-1","template":"worker"}=1
+event:session.woke worker-1 null=1
+provider:RemoveMeta s-gc-1=11
+provider:SetMeta s-gc-1=4
+provider:Start s-gc-1=1
+provider:Stop s-gc-1=1
+row:gc-1:awake_started_at=T+40s
+row:gc-1:core_hash_breakdown=<set>
+row:gc-1:creation_complete_at=T+40s
+row:gc-1:drain_at=T+20s
+row:gc-1:generation=2
+row:gc-1:last_woke_at=T+40s
+row:gc-1:live_hash=<set>
+row:gc-1:primed_at=T+40s
+row:gc-1:prompt_hash=<set>
+row:gc-1:sleep_intent=
+row:gc-1:slept_at=T+30s
+row:gc-1:started_config_hash=<set>
+row:gc-1:started_launch_hash=<set>
+row:gc-1:started_live_hash=<set>
+row:gc-1:started_provision_hash=<set>
+row:gc-1:state=awake
+row:gc-1:state_reason=creation_complete
+runtime:s-gc-1=id=gc-1 epoch=2 token=<set> alive attached=false
+## 2 past the drain timeout (+7m0s)
+## 3 wake (+8m10s)
+## 4 the next pass (+9m10s)
+=== a provider swap stops the runtime
+## 0 seed (+10s)
+provider:RemoveMeta s-gc-1=1
+provider:SetMeta s-gc-1=2
+row:gc-1:alias=
+row:gc-1:alias_history=alias-gc-1
+row:gc-1:command=true
+row:gc-1:continuation_epoch=1
+row:gc-1:currently_processing_bead_id=gw-1
+row:gc-1:effective_sleep_after_idle=off
+row:gc-1:gc.trigger_bead_id=gw-1
+row:gc-1:gc.work_dir=<city>
+row:gc-1:requested_sleep_after_idle=off
+row:gc-1:session_origin=ephemeral
+row:gc-1:sleep_capability=full
+row:gc-1:sleep_policy_fingerprint=value=off|class=interactive_resume|source=legacy_off|wake=resume|cap=full|deps=|template=worker
+row:gc-1:sleep_policy_source=legacy_off
+row:gc-1:synced_at=T+0s
+row:gc-1:work_dir=<city>
+work:gw-1:gc.session_name=s-gc-1
+## 1 swap (+40s)
+event:session.woke worker-1 null=1
+provider:RemoveMeta s-gc-1=5
+provider:Start s-gc-1=1
+row:gc-1:awake_started_at=T+20s
+row:gc-1:core_hash_breakdown=<set>
+row:gc-1:creation_complete_at=T+20s
+row:gc-1:generation=2
+row:gc-1:last_woke_at=T+20s
+row:gc-1:live_hash=<set>
+row:gc-1:primed_at=T+20s
+row:gc-1:prompt_hash=<set>
+row:gc-1:started_config_hash=<set>
+row:gc-1:started_launch_hash=<set>
+row:gc-1:started_live_hash=<set>
+row:gc-1:started_provision_hash=<set>
+row:gc-1:state_reason=creation_complete
+row:gc-1:wake_attempts=1
+runtime:s-gc-1=id=gc-1 epoch=2 token=<set> alive attached=false
+## 2 the next pass (+1m50s)
+row:gc-1:wake_attempts=0
+=== a quarantine, then a kill fence, expires
+## 0 seed (+10s)
+row:gc-1:alias=
+row:gc-1:alias_history=alias-gc-1
+row:gc-1:command=true
+row:gc-1:continuation_epoch=1
+row:gc-1:gc.trigger_bead_id=gw-1
+row:gc-1:gc.work_dir=<city>
+row:gc-1:session_origin=ephemeral
+row:gc-1:synced_at=T+0s
+row:gc-1:work_dir=<city>
+work:gw-1:gc.session_name=s-gc-1
+## 1 the quarantine expires (+3m10s)
+row:gc-1:churn_count=0
+row:gc-1:quarantined_until=
+row:gc-1:wake_attempts=0
+## 2 the kill fence expires (+6m20s)
+event:session.woke worker-1 null=1
+provider:RemoveMeta s-gc-1=5
+provider:Start s-gc-1=1
+row:gc-1:awake_started_at=T+6m0s
+row:gc-1:core_hash_breakdown=<set>
+row:gc-1:creation_complete_at=T+6m0s
+row:gc-1:currently_processing_bead_id=gw-1
+row:gc-1:effective_sleep_after_idle=off
+row:gc-1:generation=2
+row:gc-1:last_woke_at=T+6m0s
+row:gc-1:live_hash=<set>
+row:gc-1:primed_at=T+6m0s
+row:gc-1:prompt_hash=<set>
+row:gc-1:requested_sleep_after_idle=off
+row:gc-1:sleep_capability=full
+row:gc-1:sleep_policy_fingerprint=value=off|class=interactive_resume|source=legacy_off|wake=resume|cap=full|deps=|template=worker
+row:gc-1:sleep_policy_source=legacy_off
+row:gc-1:sleep_reason=
+row:gc-1:started_config_hash=<set>
+row:gc-1:started_launch_hash=<set>
+row:gc-1:started_live_hash=<set>
+row:gc-1:started_provision_hash=<set>
+row:gc-1:state=awake
+row:gc-1:state_reason=creation_complete
+runtime:s-gc-1=id=gc-1 epoch=2 token=<set> alive attached=false
 === an unwanted row inside, then past, the wake grace
 ## 0 seed (+0s)
 ## 1 inside the grace (+2m0s)
@@ -254,3 +386,110 @@ row:gc-c:started_provision_hash=<set>
 row:gc-c:state=awake
 row:gc-c:state_reason=creation_complete
 runtime:test-city--chat=id=gc-c epoch=2 token=<set> alive attached=false
+=== kill a seat holding a dep-blocked claim
+## 0 seed (+10s)
+provider:RemoveMeta s-gc-1=1
+provider:SetMeta s-gc-1=2
+row:gc-1:alias=
+row:gc-1:alias_history=alias-gc-1
+row:gc-1:command=true
+row:gc-1:continuation_epoch=1
+row:gc-1:effective_sleep_after_idle=off
+row:gc-1:gc.trigger_bead_id=gw-1
+row:gc-1:gc.work_dir=<city>
+row:gc-1:requested_sleep_after_idle=off
+row:gc-1:session_origin=ephemeral
+row:gc-1:sleep_capability=full
+row:gc-1:sleep_policy_fingerprint=value=off|class=interactive_resume|source=legacy_off|wake=resume|cap=full|deps=|template=worker
+row:gc-1:sleep_policy_source=legacy_off
+row:gc-1:synced_at=T+0s
+row:gc-1:work_dir=<city>
+## 1 kill (+10s)
+## 2 past the kill grace (+6m20s)
+row:gc-1:close_reason=session terminated: killed
+row:gc-1:closed_at=T+6m10s
+row:gc-1:state=killed
+row:gc-1:status=closed
+row:gc-1:synced_at=T+6m10s
+work:gw-1:assignee=
+=== kill a seat holding a ready claim
+## 0 seed (+10s)
+provider:RemoveMeta s-gc-1=1
+provider:SetMeta s-gc-1=2
+row:gc-1:alias=
+row:gc-1:alias_history=alias-gc-1
+row:gc-1:command=true
+row:gc-1:continuation_epoch=1
+row:gc-1:currently_processing_bead_id=gw-1
+row:gc-1:effective_sleep_after_idle=off
+row:gc-1:gc.trigger_bead_id=gw-1
+row:gc-1:gc.work_dir=<city>
+row:gc-1:requested_sleep_after_idle=off
+row:gc-1:session_origin=ephemeral
+row:gc-1:sleep_capability=full
+row:gc-1:sleep_policy_fingerprint=value=off|class=interactive_resume|source=legacy_off|wake=resume|cap=full|deps=|template=worker
+row:gc-1:sleep_policy_source=legacy_off
+row:gc-1:synced_at=T+0s
+row:gc-1:work_dir=<city>
+## 1 kill (+10s)
+## 2 past the kill grace (+6m30s)
+event:session.woke worker-1 null=1
+provider:RemoveMeta s-gc-1=5
+provider:Start s-gc-1=1
+row:gc-1:awake_started_at=T+6m10s
+row:gc-1:core_hash_breakdown=<set>
+row:gc-1:creation_complete_at=T+6m10s
+row:gc-1:generation=2
+row:gc-1:last_woke_at=T+6m10s
+row:gc-1:live_hash=<set>
+row:gc-1:primed_at=T+6m10s
+row:gc-1:prompt_hash=<set>
+row:gc-1:sleep_reason=
+row:gc-1:started_config_hash=<set>
+row:gc-1:started_launch_hash=<set>
+row:gc-1:started_live_hash=<set>
+row:gc-1:started_provision_hash=<set>
+row:gc-1:state=awake
+row:gc-1:state_reason=creation_complete
+runtime:s-gc-1=id=gc-1 epoch=2 token=<set> alive attached=false
+=== suspend, then wake
+## 0 seed (+10s)
+provider:RemoveMeta s-gc-1=1
+provider:SetMeta s-gc-1=2
+row:gc-1:alias=
+row:gc-1:alias_history=alias-gc-1
+row:gc-1:command=true
+row:gc-1:continuation_epoch=1
+row:gc-1:currently_processing_bead_id=gw-1
+row:gc-1:effective_sleep_after_idle=off
+row:gc-1:gc.trigger_bead_id=gw-1
+row:gc-1:gc.work_dir=<city>
+row:gc-1:requested_sleep_after_idle=off
+row:gc-1:session_origin=ephemeral
+row:gc-1:sleep_capability=full
+row:gc-1:sleep_policy_fingerprint=value=off|class=interactive_resume|source=legacy_off|wake=resume|cap=full|deps=|template=worker
+row:gc-1:sleep_policy_source=legacy_off
+row:gc-1:synced_at=T+0s
+row:gc-1:work_dir=<city>
+work:gw-1:gc.session_name=s-gc-1
+## 1 suspend (+30s)
+event:session.woke worker-1 null=1
+provider:RemoveMeta s-gc-1=5
+provider:Start s-gc-1=1
+row:gc-1:awake_started_at=T+10s
+row:gc-1:core_hash_breakdown=<set>
+row:gc-1:creation_complete_at=T+10s
+row:gc-1:generation=2
+row:gc-1:last_woke_at=T+10s
+row:gc-1:live_hash=<set>
+row:gc-1:primed_at=T+10s
+row:gc-1:prompt_hash=<set>
+row:gc-1:started_config_hash=<set>
+row:gc-1:started_launch_hash=<set>
+row:gc-1:started_live_hash=<set>
+row:gc-1:started_provision_hash=<set>
+row:gc-1:state=awake
+row:gc-1:state_reason=creation_complete
+runtime:s-gc-1=id=gc-1 epoch=2 token=<set> alive attached=false
+## 2 wake (+50s)
+## 3 the next pass (+1m50s)
