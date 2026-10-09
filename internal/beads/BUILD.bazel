@@ -136,6 +136,7 @@ go_test(
         "event_payload_test.go",
         "exec_timeout_linux_test.go",
         "export_test.go",
+        "factory_metadata_backend_test.go",
         "factory_test.go",
         "filestore_atomic_close_test.go",
         "filestore_test.go",
