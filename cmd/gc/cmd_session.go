@@ -1743,7 +1743,7 @@ func cmdSessionSuspend(args []string, stdout, stderr io.Writer, jsonOutput ...bo
 		if pokeErr := sessionSuspendPokeController(cityPath); pokeErr == nil {
 			// Controller is running — metadata-only suspend: the operator
 			// hold (session.OperatorSuspendPatch), which the reconciler drains.
-			if err := sessionFrontDoor(sessStore).OperatorSuspend(sessionID, time.Now(), nil); err != nil {
+			if err := sessionFrontDoor(sessStore).OperatorSuspend(sessionID, time.Now()); err != nil {
 				fmt.Fprintf(stderr, "gc session suspend: %v\n", err) //nolint:errcheck // best-effort stderr
 				return 1
 			}
@@ -1795,7 +1795,7 @@ func cmdSessionSuspend(args []string, stdout, stderr io.Writer, jsonOutput ...bo
 		}
 		return 0
 	}
-	fmt.Fprintf(stdout, "Session %s suspended. Resume with: gc session attach %s\n", sessionID, sessionID) //nolint:errcheck // best-effort stdout
+	fmt.Fprintf(stdout, "Session %s suspended. Resume with: gc session wake %s\n", sessionID, sessionID) //nolint:errcheck // best-effort stdout
 	return 0
 }
 
