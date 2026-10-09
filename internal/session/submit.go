@@ -93,7 +93,7 @@ func (m *Manager) Submit(ctx context.Context, id, message, resumeCommand string,
 
 func (m *Manager) submit(ctx context.Context, id, message, resumeCommand string, hints runtime.Config, intent SubmitIntent) (SubmitOutcome, error) {
 	var outcome SubmitOutcome
-	err := withSessionMutationLock(id, func() error {
+	err := withSessionStartLock(ctx, id, func() error {
 		b, sessName, err := m.sessionBead(id)
 		if err != nil {
 			return err
@@ -169,6 +169,13 @@ func (m *Manager) interruptAndSubmitLocked(ctx context.Context, id string, b bea
 	if !running {
 		return m.sendLocked(ctx, id, b, sessName, message, resumeCommand, hints, true)
 	}
+	// Every interrupt may end in a stop and a restart: take the runtime lease
+	// before sending anything, and carry it to the restart (D8D-5).
+	ctx, release, err := m.leaseForRestartLocked(ctx, id, sessName)
+	if err != nil {
+		return err
+	}
+	defer release()
 	if requiresHardRestartInterrupt(b) {
 		piTranscriptPath, err := piPendingTurnPath(b, hints)
 		if err != nil {

@@ -605,6 +605,7 @@ type Manager struct {
 	transportResolver       func(template, provider string) transportResolution
 	clk                     clock.Clock
 	staleKeyDetectionWaiter StaleKeyDetectionWaiter
+	leaseTTL                time.Duration // the runtime lease records' TTL (WithRuntimeLeaseTTL)
 }
 
 // PruneResult reports which sessions were pruned and which queued wait nudges
@@ -1237,7 +1238,7 @@ func (m *Manager) createBeadOnly(spec CreateOptions) (Info, error) {
 // suspended, it is resumed first using resumeCommand. If the tmux session
 // died (active bead but no process), it is restarted.
 func (m *Manager) Attach(ctx context.Context, id string, resumeCommand string, hints runtime.Config) error {
-	return withSessionMutationLock(id, func() error {
+	return withSessionStartLock(ctx, id, func() error {
 		b, sessName, err := m.sessionBead(id)
 		if err != nil {
 			return err
@@ -1283,7 +1284,8 @@ func (m *Manager) SuspendForShutdown(id string) error {
 }
 
 func (m *Manager) suspend(id string, intent suspendIntent) error {
-	return withSessionMutationLock(id, func() error {
+	ctx := context.Background()
+	return withSessionStartLock(ctx, id, func() error {
 		b, sessName, err := m.sessionBead(id)
 		if err != nil {
 			return err
@@ -1296,6 +1298,15 @@ func (m *Manager) suspend(id string, intent suspendIntent) error {
 		current := State(b.Metadata["state"])
 		if current == StateSuspended {
 			return nil // idempotent: already suspended
+		}
+		// An operator's suspend stops the runtime under its lease, taken before
+		// any write; the city stop sweep takes none (it stops every runtime).
+		if intent == suspendIntentOperator {
+			release, err := m.leaseForStop(ctx, id, sessName, 0)
+			if err != nil {
+				return err
+			}
+			defer release()
 		}
 		// failed-create is a create-rollback terminal state: the create never
 		// reached creation_complete, so there is no live turn to suspend — only
@@ -1450,7 +1461,7 @@ func (m *Manager) Close(id string) error {
 // CloseDetailed ends a conversation permanently and reports cleanup artifacts.
 func (m *Manager) CloseDetailed(id string) (CloseResult, error) {
 	result := CloseResult{}
-	err := withSessionMutationLock(id, func() error {
+	err := withSessionStartLock(context.Background(), id, func() error {
 		b, sessName, err := m.loadSessionBead(id, true)
 		if err != nil {
 			return err
@@ -1468,6 +1479,11 @@ func (m *Manager) CloseDetailed(id string) (CloseResult, error) {
 		if _, err := Transition(current, CmdClose); err != nil {
 			return err
 		}
+		release, err := m.leaseForStop(context.Background(), id, sessName, 0)
+		if err != nil {
+			return err
+		}
+		defer release()
 
 		// Stop the live runtime before marking the bead closed. Close is a
 		// cleanup path, so it absorbs a missing-session or missing-server
@@ -1554,6 +1570,13 @@ func (m *Manager) retireConfiguredNamedSessionIdentifiers(id string, b beads.Bea
 // outcome Kill was asked for, so it reports success rather than surfacing the
 // provider's "nothing to stop" answer to the operator.
 func (m *Manager) Kill(id string) error {
+	return m.KillContext(context.Background(), id)
+}
+
+// KillContext is Kill under the session's runtime lease: ctx's, when it
+// carries its caller's (ContextWithRuntimeLease), or one waited for up to
+// RuntimeLeaseOperatorWait.
+func (m *Manager) KillContext(ctx context.Context, id string) error {
 	b, sessName, err := m.sessionBead(id)
 	if err != nil {
 		return err
@@ -1570,6 +1593,11 @@ func (m *Manager) Kill(id string) error {
 			return fmt.Errorf("session %s is not active", id)
 		}
 	}
+	release, err := m.leaseForStop(ctx, id, sessName, operatorLeaseWait)
+	if err != nil {
+		return err
+	}
+	defer release()
 	return runtime.StopForCleanup(m.sp, sessName)
 }
 

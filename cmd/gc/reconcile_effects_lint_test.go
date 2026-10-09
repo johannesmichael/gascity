@@ -36,7 +36,7 @@ var effectBannedMethods = []string{
 	"Sleep", "BeginDrainAckStopPending", "RequestRestart", "ResetConfigDrift", "SetWaitHold", "RecordCurrentBead",
 	"SetCurrentClaim", "SetStatusOpen", "RepairType", "RepairTypeBestEffort", "SetLocalString", "CloseWithoutReason",
 	"UpdateMetadataFenced", "ApplyPatchIfLifecycleUnchanged", "WithPendingCreateRollback", "CloseWithTerminalPatch",
-	"RollbackPendingCreateAtomically",
+	"RollbackPendingCreateAtomically", "CloseWithTerminalPatchUnder", "RollbackPendingCreateAtomicallyUnder",
 	"Create", "Update", "Close", "Reopen", "CloseAll", "Delete", "Tx", "DepAdd", "DepRemove",
 	"CommitStartedIfCurrent",
 	"WakeSession", "CreateSession", "CreateSessionInfo", "SaveStartupHealthEpisode",

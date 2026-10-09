@@ -550,6 +550,24 @@ func (m *Manager) ensureRunning(ctx context.Context, id string, b beads.Bead, se
 	if resumeCommand == "" {
 		return fmt.Errorf("%w: %s", ErrResumeRequired, id)
 	}
+	// The start runs under the runtime lease, taken before its first write
+	// (withSessionStartLock reruns this on busy), or under its caller's, and
+	// its calls stop once the lease lapses or moves.
+	lease, release, err := m.leaseRuntime(ctx, id, sessName, 0)
+	if err != nil {
+		if unroute != nil {
+			unroute()
+		}
+		return err
+	}
+	defer release()
+	if lease != nil {
+		var cancel context.CancelFunc
+		if ctx, cancel, err = lease.Watch(ctx, runtimeLeaseWatchEvery); err != nil {
+			return err
+		}
+		defer cancel()
+	}
 
 	cfg := hints
 	cfg.Command = resumeCommand
@@ -978,7 +996,7 @@ func (m *Manager) sendLocked(ctx context.Context, id string, b beads.Bead, sessN
 }
 
 func (m *Manager) send(ctx context.Context, id, message, resumeCommand string, hints runtime.Config, immediate bool) error {
-	return withSessionMutationLock(id, func() error {
+	return withSessionStartLock(ctx, id, func() error {
 		b, sessName, err := m.sessionBead(id)
 		if err != nil {
 			return err
@@ -1011,7 +1029,7 @@ func (m *Manager) sendLiveOnly(ctx context.Context, id, message string, immediat
 // It is the canonical manager-level bring-up path for worker handles and
 // other callers that need bounded startup without attaching a terminal.
 func (m *Manager) Start(ctx context.Context, id, resumeCommand string, hints runtime.Config) error {
-	return withSessionMutationLock(id, func() error {
+	return withSessionStartLock(ctx, id, func() error {
 		b, sessName, err := m.sessionBead(id)
 		if err != nil {
 			return err
@@ -1067,7 +1085,7 @@ func (m *Manager) SendImmediateLiveOnly(ctx context.Context, id, message string)
 // an operational error.
 func (m *Manager) TryWaitIdleNudge(ctx context.Context, id, source, message, resumeCommand string, hints runtime.Config) (bool, error) {
 	var delivered bool
-	err := withSessionMutationLock(id, func() error {
+	err := withSessionStartLock(ctx, id, func() error {
 		b, sessName, err := m.sessionBead(id)
 		if err != nil {
 			return err

@@ -163,7 +163,7 @@ func (h *SessionHandle) Kill(ctx context.Context) (err error) {
 	if id == "" {
 		return nil
 	}
-	err = h.manager.Kill(id)
+	err = h.manager.KillContext(ctx, id)
 	return err
 }
 
